@@ -27,11 +27,17 @@ load_dotenv()
 
 @router.get("/heartbeat", status_code=status.HTTP_200_OK, tags=["heartbeat"])
 def heartbeat():
+    """
+    Returns a server heartbeat timestamp in nanoseconds.
+    """
     heartbeat = time.monotonic_ns()
     return {"heartbeat": heartbeat}
 
 @router.post("/ask", status_code=status.HTTP_200_OK, tags=["ask"])
 def ask(question: str):
+    """
+    Sends a request to the OpenAI API and returns a response.
+    """
     client = OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
