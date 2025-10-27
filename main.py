@@ -95,12 +95,28 @@ def review_code_with_llm(diff: str, pr_title: str) -> str:
     response = google_genai_client(prompt)
     return response
 
+def write_review_comment(repo_name: str, pr_number: int, comment: str):
+    github_pat = os.environ.get("GITHUB_PAT")
+    github_username = os.environ.get("GITHUB_USERNAME")
+    headers = {
+        "Authorization": f"Bearer {github_pat}",
+        "Accept": "application/vnd.github+json"
+    }
+    url = f"https://api.github.com/repos/{github_username}/{repo_name}/issues/{pr_number}/comments"
+    review_comment = {"body": f"## Reviewed by RISHI🧠\n\n{comment}"}
+
+    response = requests.post(url, headers=headers, json=review_comment)
+
+    if response.status_code == 201:
+        print("Review comment posted successfully!")
+    else:
+        print(f"ERROR: {response.text}")
+
 diff = get_pr_diff("rishi", 1)
 if not diff:
     print("failed to get diff")
-review = review_code_with_llm(diff, "Read pr diff from repository")
-
-print(review)
+review = review_code_with_llm(diff, "Write llm review comment in pr")
+write_review_comment("rishi", 2, review)
 
 @router.get("/heartbeat", status_code=status.HTTP_200_OK, tags=["heartbeat"])
 def heartbeat():
