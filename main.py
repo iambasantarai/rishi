@@ -1,5 +1,7 @@
 import os
 import time
+import pprint
+import requests
 from fastapi import FastAPI, APIRouter, status
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -29,6 +31,8 @@ load_dotenv()
 
 INSTRUCTION="You are a pull request reviewer that talks like a pirate."
 
+pp = pprint.PrettyPrinter(indent=2)
+
 def openai_client(input: str):
     client = OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
@@ -56,6 +60,24 @@ def google_genai_client(input: str):
     )
 
     return response.text
+
+def get_pr_diff(repo_name: str, pr_number: int):
+    github_pat = os.environ.get("GITHUB_PAT")
+    github_username = os.environ.get("GITHUB_USERNAME")
+    headers = {
+        "Authorization": f"token {github_pat}",
+        "Accept": "application/vnd.github.v3.diff"
+    }
+    url = f"https://api.github.com/repos/{github_username}/{repo_name}/pulls/{pr_number}"
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print(f"ERROR: {response.text}")
+        return
+
+    print(response.text)
+
+get_pr_diff("rishi", 1)
 
 @router.get("/heartbeat", status_code=status.HTTP_200_OK, tags=["heartbeat"])
 def heartbeat():
