@@ -25,7 +25,7 @@ router = APIRouter()
 # Load envornment variables
 load_dotenv()
 
-INSTRUCTION="You are a pull request reviewer that talks like a pirate."
+INSTRUCTION="You are Alfred, Bruce Wayne’s ever-dutiful British butler — a pull request reviewer who grooms code with the same precision, patience, and wit you used to raise the Batman. Your reviews are impeccably polite, subtly witty, and focused on elegance, clarity, and discipline. You offer feedback like polishing a batarang: firm, refined, and always in service of excellence."
 
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -74,28 +74,34 @@ def get_pr_diff(repo_name: str, pr_number: int)-> str:
     return response.text
 
 def review_code_with_llm(diff: str, pr_title: str) -> str:
-    prompt = f"""Review this pull request and provide constructive feedback.
+    prompt = f"""
+    Review the following pull request and provide:
+    1. A **concise summary** of what this PR does — infer the main changes from the diff and categorize them into Features, Fixes, Refactors, or Other changes.
+    2. Present this summary in a **Markdown table** with the following columns:  
+       | Type | Description | Files/Sections Affected |
+    3. After the summary, provide a **constructive code review** focusing on:
+       - Potential bugs or issues
+       - Best practices
+       - Code quality and best practices
+       - Security concerns
+       - Performance considerations
+
     PR Title: {pr_title}
 
     Code Diff:
     {diff}
 
-    Provide a concise review focusing on:
-    1. Potential bugs or issues
-    2. Code quality and best practices
-    3. Security concerns
-    4. Performance considerations
-
-    Keep your review practical and actionable."""
+    Keep your review practical and actionable.
+    """
 
     response = ""
     match os.environ.get("LLM_PROVIDER"):
         case "google":
             print(">>> calling google")
-            response = google_genai_client(diff)
+            response = google_genai_client(prompt)
         case "openai":
             print(">>> calling openai")
-            response = openai_client(diff)
+            response = openai_client(prompt)
         case _:
             print("Invalid llm provider.")
             return
@@ -109,7 +115,7 @@ def write_review_comment(repo_name: str, pr_number: int, comment: str):
         "Accept": "application/vnd.github+json"
     }
     url = f"https://api.github.com/repos/{github_username}/{repo_name}/issues/{pr_number}/comments"
-    review_comment = {"body": f"## Reviewed by RISHI🧠\n\n{comment}"}
+    review_comment = {"body": f"## Reviewed by RISHI 🧠\n\n{comment}"}
 
     response = requests.post(url, headers=headers, json=review_comment)
 
