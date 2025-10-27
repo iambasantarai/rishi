@@ -56,16 +56,16 @@ def google_genai_client(input: str):
         config=types.GenerateContentConfig(
             system_instruction=INSTRUCTION
         ),
-        contents="Explain how AI works in a few words",
+        contents=input,
     )
 
     return response.text
 
-def get_pr_diff(repo_name: str, pr_number: int):
+def get_pr_diff(repo_name: str, pr_number: int)-> str:
     github_pat = os.environ.get("GITHUB_PAT")
     github_username = os.environ.get("GITHUB_USERNAME")
     headers = {
-        "Authorization": f"token {github_pat}",
+        "Authorization": f"Bearer {github_pat}",
         "Accept": "application/vnd.github.v3.diff"
     }
     url = f"https://api.github.com/repos/{github_username}/{repo_name}/pulls/{pr_number}"
@@ -75,9 +75,32 @@ def get_pr_diff(repo_name: str, pr_number: int):
         print(f"ERROR: {response.text}")
         return
 
-    print(response.text)
+    return response.text
 
-get_pr_diff("rishi", 1)
+def review_code_with_llm(diff: str, pr_title: str) -> str:
+    prompt = f"""Review this pull request and provide constructive feedback.
+    PR Title: {pr_title}
+
+    Code Diff:
+    {diff}
+
+    Provide a concise review focusing on:
+    1. Potential bugs or issues
+    2. Code quality and best practices
+    3. Security concerns
+    4. Performance considerations
+
+    Keep your review practical and actionable."""
+
+    response = google_genai_client(prompt)
+    return response
+
+diff = get_pr_diff("rishi", 1)
+if not diff:
+    print("failed to get diff")
+review = review_code_with_llm(diff, "Read pr diff from repository")
+
+print(review)
 
 @router.get("/heartbeat", status_code=status.HTTP_200_OK, tags=["heartbeat"])
 def heartbeat():
