@@ -12,11 +12,7 @@ tags_metadata = [
     {
         "name": "heartbeat",
         "description": "Heartbeat of a server",
-    },
-    {
-        "name": "ask",
-        "description": "OpenAI will answer you.",
-    },
+    }
 ]
 
 app = FastAPI(
@@ -92,7 +88,17 @@ def review_code_with_llm(diff: str, pr_title: str) -> str:
 
     Keep your review practical and actionable."""
 
-    response = google_genai_client(prompt)
+    response = ""
+    match os.environ.get("LLM_PROVIDER"):
+        case "google":
+            print(">>> calling google")
+            response = google_genai_client(diff)
+        case "openai":
+            print(">>> calling openai")
+            response = openai_client(diff)
+        case _:
+            print("Invalid llm provider.")
+            return
     return response
 
 def write_review_comment(repo_name: str, pr_number: int, comment: str):
@@ -112,12 +118,6 @@ def write_review_comment(repo_name: str, pr_number: int, comment: str):
     else:
         print(f"ERROR: {response.text}")
 
-diff = get_pr_diff("rishi", 1)
-if not diff:
-    print("failed to get diff")
-review = review_code_with_llm(diff, "Write llm review comment in pr")
-write_review_comment("rishi", 2, review)
-
 @router.get("/heartbeat", status_code=status.HTTP_200_OK, tags=["heartbeat"])
 def heartbeat():
     """
@@ -125,24 +125,5 @@ def heartbeat():
     """
     heartbeat = time.monotonic_ns()
     return {"heartbeat": heartbeat}
-
-@router.post("/ask", status_code=status.HTTP_200_OK, tags=["ask"])
-def ask(question: str):
-    """
-    Sends a request to the LLM and returns a response.
-    """
-    response = ""
-    match os.environ.get("LLM_PROVIDER"):
-        case "google":
-            print("calling google")
-            response = google_genai_client(question)
-        case "openai":
-            print("calling openai")
-            response = openai_client(question)
-        case _:
-            print("Invalid llm provider.")
-            return
-
-    return {"answer": response}
 
 app.include_router(router)
