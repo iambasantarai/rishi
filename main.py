@@ -141,6 +141,39 @@ def webhook(request: Request):
     payload = request.json()
     event_type = request.headers.get("X-GitHub-Event")
 
-    print(f"Received event: {event_type}")
+    print(f">>> Received event: {event_type}")
+
+    if event_type == "pull_request":
+        action = payload.get("action")
+
+        if action not in ["opened", "synchronize"]:
+            return {"status": "ignored", "reason": f"action '{action}' not relevant"}
+
+        pr = payload["pull_request"]
+        pr_number = pr["number"]
+        pr_title = pr["title"]
+        repo_full_name = payload["repository"]["full_name"]
+
+        print(f">>> Processing PR #{pr_number} in {repo_full_name}")
+        try:
+            diff = get_pr_diff(repo_full_name, pr_number)
+
+            # Limit diff size
+            if len(diff) > 50000:
+                comment = "This PR is too large for automated review. Please break it into smaller PRs."
+                write_review_comment(repo_full_name, pr_number, comment)
+                return {"status": "skipped", "reason": "diff too large"}
+
+            review = review_code_with_llm(diff, pr_title)
+
+            # Post the review
+            write_review_comment(repo_full_name, pr_number, review)
+            return {"status": "success", "pr": pr_number}
+
+        except Exception as e:
+            print(f"ERROR: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return {"status": "ignored", "reason": "not a PR event"}
 
 app.include_router(router)
