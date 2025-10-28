@@ -142,5 +142,6 @@ def webhook(request: Request):
     event_type = request.headers.get("X-GitHub-Event")
 
     print(f"Received event: {event_type}")
+    pp.pprint(payload)
 
 app.include_router(router)
