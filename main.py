@@ -2,7 +2,7 @@ import os
 import time
 import pprint
 import requests
-from fastapi import FastAPI, APIRouter, status
+from fastapi import FastAPI, APIRouter, status, Request
 from openai import OpenAI
 from dotenv import load_dotenv
 from google import genai
@@ -12,6 +12,10 @@ tags_metadata = [
     {
         "name": "heartbeat",
         "description": "Heartbeat of a server",
+    },
+    {
+        "name": "webhook",
+        "description": "Handle webhook event",
     }
 ]
 
@@ -131,5 +135,12 @@ def heartbeat():
     """
     heartbeat = time.monotonic_ns()
     return {"heartbeat": heartbeat}
+
+@router.post("/webhook", status_code=status.HTTP_200_OK, tags=["webhook"])
+def webhook(request: Request):
+    payload = request.json()
+    event_type = request.headers.get("X-GitHub-Event")
+
+    print(f"Received event: {event_type}")
 
 app.include_router(router)
