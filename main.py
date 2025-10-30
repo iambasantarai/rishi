@@ -1,7 +1,7 @@
 import os
 import time
 import pprint
-import requests
+import httpx
 from fastapi import FastAPI, APIRouter, status, Request
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -38,20 +38,20 @@ def openai_client(input: str):
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
-    response = client.responses.create(
+    res = client.responses.create(
         model="gpt-4o",
         instructions=INSTRUCTION,
         input=input,
     )
 
-    return response.output_text
+    return res.output_text
 
 def google_genai_client(input: str):
     client = genai.Client(
         api_key=os.environ.get("GEMINI_API_KEY")
     )
 
-    response = client.models.generate_content(
+    res = client.models.generate_content(
         model="gemini-2.5-flash",
         config=types.GenerateContentConfig(
             system_instruction=INSTRUCTION
@@ -59,9 +59,9 @@ def google_genai_client(input: str):
         contents=input,
     )
 
-    return response.text
+    return res.text
 
-def get_pr_diff(repo_name: str, pr_number: int)-> str:
+async def get_pr_diff(repo_name: str, pr_number: int)-> str:
     github_pat = os.environ.get("GITHUB_PAT")
     github_username = os.environ.get("GITHUB_USERNAME")
     headers = {
@@ -70,12 +70,10 @@ def get_pr_diff(repo_name: str, pr_number: int)-> str:
     }
     url = f"https://api.github.com/repos/{github_username}/{repo_name}/pulls/{pr_number}"
 
-    response = requests.get(url, headers=headers)
-    if response.status_code != 200:
-        print(f"ERROR: {response.text}")
-        return
-
-    return response.text
+    async with httpx.AsyncClient() as client:
+        res = await client.get(url, headers)
+        res.raise_for_status()
+        return res.text
 
 def review_code_with_llm(diff: str, pr_title: str) -> str:
     prompt = f"""
@@ -98,20 +96,20 @@ def review_code_with_llm(diff: str, pr_title: str) -> str:
     Keep your review practical and actionable.
     """
 
-    response = ""
+    res = ""
     match os.environ.get("LLM_PROVIDER"):
         case "google":
             print(">>> calling google")
-            response = google_genai_client(prompt)
+            res = google_genai_client(prompt)
         case "openai":
             print(">>> calling openai")
-            response = openai_client(prompt)
+            res = openai_client(prompt)
         case _:
             print("Invalid llm provider.")
             return
-    return response
+    return res
 
-def write_review_comment(repo_name: str, pr_number: int, comment: str):
+async def write_review_comment(repo_name: str, pr_number: int, comment: str):
     github_pat = os.environ.get("GITHUB_PAT")
     github_username = os.environ.get("GITHUB_USERNAME")
     headers = {
@@ -121,12 +119,9 @@ def write_review_comment(repo_name: str, pr_number: int, comment: str):
     url = f"https://api.github.com/repos/{github_username}/{repo_name}/issues/{pr_number}/comments"
     review_comment = {"body": f"## Reviewed by RISHI 🧠\n\n{comment}"}
 
-    response = requests.post(url, headers=headers, json=review_comment)
-
-    if response.status_code == 201:
-        print("Review comment posted successfully!")
-    else:
-        print(f"ERROR: {response.text}")
+    async with httpx.AsyncClient() as client:
+        res = await client.post(url, headers=headers, json=review_comment)
+        res.raise_for_status()
 
 @router.get("/heartbeat", status_code=status.HTTP_200_OK, tags=["heartbeat"])
 def heartbeat():
@@ -137,10 +132,16 @@ def heartbeat():
     return {"heartbeat": heartbeat}
 
 @router.post("/webhook", status_code=status.HTTP_200_OK, tags=["webhook"])
-def webhook(request: Request):
-    payload = request.json()
+async def webhook(request: Request):
+    payload = await request.json()
     event_type = request.headers.get("X-GitHub-Event")
 
-    print(f"Received event: {event_type}")
+    if event_type == "pull_request":
+        action = payload.get("action")
+
+        pr = payload["pull_request"]
+        pr_number = pr["number"]
+        pr_title = pr["title"]
+        repo_full_name = payload["repository"]["full_name"]
 
 app.include_router(router)
