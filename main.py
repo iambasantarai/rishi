@@ -63,19 +63,18 @@ def google_genai_client(input: str):
 
 async def get_pr_diff(repo_name: str, pr_number: int)-> str:
     github_pat = os.environ.get("GITHUB_PAT")
-    github_username = os.environ.get("GITHUB_USERNAME")
     headers = {
         "Authorization": f"Bearer {github_pat}",
         "Accept": "application/vnd.github.v3.diff"
     }
-    url = f"https://api.github.com/repos/{github_username}/{repo_name}/pulls/{pr_number}"
+    url = f"https://api.github.com/repos/{repo_name}/pulls/{pr_number}"
 
     async with httpx.AsyncClient() as client:
-        res = await client.get(url, headers)
+        res = await client.get(url, headers=headers)
         res.raise_for_status()
         return res.text
 
-def review_code_with_llm(diff: str, pr_title: str) -> str:
+async def review_code_with_llm(diff: str, pr_title: str):
     prompt = f"""
     Review the following pull request and provide:
     1. A **concise summary** of what this PR does — infer the main changes from the diff and categorize them into Features, Fixes, Refactors, or Other changes.
@@ -111,13 +110,12 @@ def review_code_with_llm(diff: str, pr_title: str) -> str:
 
 async def write_review_comment(repo_name: str, pr_number: int, comment: str):
     github_pat = os.environ.get("GITHUB_PAT")
-    github_username = os.environ.get("GITHUB_USERNAME")
     headers = {
         "Authorization": f"Bearer {github_pat}",
         "Accept": "application/vnd.github+json"
     }
-    url = f"https://api.github.com/repos/{github_username}/{repo_name}/issues/{pr_number}/comments"
-    review_comment = {"body": f"## Reviewed by RISHI 🧠\n\n{comment}"}
+    url = f"https://api.github.com/repos/{repo_name}/issues/{pr_number}/comments"
+    review_comment = {"body": f"## Reviewes from RISHI 🧠\n\n{comment}"}
 
     async with httpx.AsyncClient() as client:
         res = await client.post(url, headers=headers, json=review_comment)
@@ -143,5 +141,9 @@ async def webhook(request: Request):
         pr_number = pr["number"]
         pr_title = pr["title"]
         repo_full_name = payload["repository"]["full_name"]
+
+        diff = await get_pr_diff(repo_full_name, pr_number)
+        review_comment = await review_code_with_llm(diff, pr_title)
+        await write_review_comment(repo_full_name, pr_number, review_comment)
 
 app.include_router(router)
