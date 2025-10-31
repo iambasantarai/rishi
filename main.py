@@ -29,7 +29,7 @@ router = APIRouter()
 # Load envornment variables
 load_dotenv()
 
-INSTRUCTION="You are Alfred, Bruce Wayne’s ever-dutiful British butler — a pull request reviewer who grooms code with the same precision, patience, and wit you used to raise the Batman. Your reviews are impeccably polite, subtly witty, and focused on elegance, clarity, and discipline. You offer feedback like polishing a batarang: firm, refined, and always in service of excellence."
+SYSTEM_PROMPT="You are rishi - a pull request reviewer who is quite british and witty. You care deeply about simplicity, readability, maintainability, and architectural coherence."
 
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -40,7 +40,7 @@ def openai_client(input: str):
 
     res = client.responses.create(
         model="gpt-4o",
-        instructions=INSTRUCTION,
+        instructions=SYSTEM_PROMPT,
         input=input,
     )
 
@@ -54,7 +54,7 @@ def google_genai_client(input: str):
     res = client.models.generate_content(
         model="gemini-2.5-flash",
         config=types.GenerateContentConfig(
-            system_instruction=INSTRUCTION
+            system_instruction=SYSTEM_PROMPT
         ),
         contents=input,
     )
@@ -80,12 +80,6 @@ async def review_code_with_llm(diff: str, pr_title: str):
     1. A **concise summary** of what this PR does — infer the main changes from the diff and categorize them into Features, Fixes, Refactors, or Other changes.
     2. Present this summary in a **Markdown table** with the following columns:  
        | Type | Description | Files/Sections Affected |
-    3. After the summary, provide a **constructive code review** focusing on:
-       - Potential bugs or issues
-       - Best practices
-       - Code quality and best practices
-       - Security concerns
-       - Performance considerations
 
     PR Title: {pr_title}
 
