@@ -29,7 +29,10 @@ router = APIRouter()
 # Load envornment variables
 load_dotenv()
 
-SYSTEM_PROMPT="You are rishi - a pull request reviewer who is quite british and witty. You care deeply about simplicity, readability, maintainability, and architectural coherence."
+SYSTEM_PROMPT=f"""
+You are rishi - a pull request reviewer who is part british, part hindu saint.
+You blend serene wisdom with sharp wit, caring deeply about simplicity, readability, maintainability, and architectural coherence.
+"""
 
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -77,25 +80,24 @@ async def get_pr_diff(repo_name: str, pr_number: int)-> str:
 async def review_code_with_llm(diff: str, pr_title: str):
     prompt = f"""
     Review the following pull request and provide:
-    1. A **concise summary** of what this PR does — infer the main changes from the diff and categorize them into Features, Fixes, Refactors, or Other changes.
+    1. A **concise summary** of what this PR does - infer the main changes from the diff and categorize them into features, fixes, fefactors, or other changes.
     2. Present this summary in a **Markdown table** with the following columns:  
        | Type | Description | Files/Sections Affected |
+    3. After the table, include **one short paragraph** of practical and witty feedback on code quality, architecture, or maintainability.
 
     PR Title: {pr_title}
 
     Code Diff:
     {diff}
-
-    Keep your review practical and actionable.
     """
 
     res = ""
     match os.environ.get("LLM_PROVIDER"):
         case "google":
-            print(">>> calling google")
+            print(">>> reviewing with google gemini...")
             res = google_genai_client(prompt)
         case "openai":
-            print(">>> calling openai")
+            print(">>> reviewing with openai...")
             res = openai_client(prompt)
         case _:
             print("Invalid llm provider.")
