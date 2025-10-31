@@ -133,14 +133,16 @@ async def webhook(request: Request):
     if event_type == "pull_request":
         action = payload.get("action")
 
-        if action == "opened":
-            pr = payload["pull_request"]
-            pr_number = pr["number"]
-            pr_title = pr["title"]
-            repo_full_name = payload["repository"]["full_name"]
+        if action not in ["opened", "synchronize"]:
+            return {"status": "ignored", "reason": f"action '{action}' not relevant"}
 
-            diff = await get_pr_diff(repo_full_name, pr_number)
-            review_comment = await review_code_with_llm(diff, pr_title)
-            await write_review_comment(repo_full_name, pr_number, review_comment)
+        pr = payload["pull_request"]
+        pr_number = pr["number"]
+        pr_title = pr["title"]
+        repo_full_name = payload["repository"]["full_name"]
+
+        diff = await get_pr_diff(repo_full_name, pr_number)
+        review_comment = await review_code_with_llm(diff, pr_title)
+        await write_review_comment(repo_full_name, pr_number, review_comment)
 
 app.include_router(router)
