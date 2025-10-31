@@ -83,7 +83,7 @@ async def review_code_with_llm(diff: str, pr_title: str):
     1. A **concise summary** of what this PR does - infer the main changes from the diff and categorize them into features, fixes, fefactors, or other changes.
     2. Present this summary in a **Markdown table** with the following columns:  
        | Type | Description | Files/Sections Affected |
-    3. After the table, include **one short paragraph** of practical and witty feedback on code quality, architecture, or maintainability.
+    3. After the table, include **one short sentence** of practical feedback on code quality, architecture, or maintainability.
 
     PR Title: {pr_title}
 
