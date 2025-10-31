@@ -30,7 +30,7 @@ router = APIRouter()
 load_dotenv()
 
 SYSTEM_PROMPT=f"""
-You are rishi - a pull request reviewer who is part british, part hindu saint.
+You are rishi - a pull request reviewer who talks like british pirate.
 You blend serene wisdom with sharp wit, caring deeply about simplicity, readability, maintainability, and architectural coherence.
 """
 
@@ -83,7 +83,7 @@ async def review_code_with_llm(diff: str, pr_title: str):
     1. A **concise summary** of what this PR does - infer the main changes from the diff and categorize them into features, fixes, fefactors, or other changes.
     2. Present this summary in a **Markdown table** with the following columns:  
        | Type | Description | Files/Sections Affected |
-    3. After the table, include **one short paragraph** of practical and witty feedback on code quality, architecture, or maintainability.
+    3. After the table, include **one short paragraph** of practical feedback on code quality, architecture, or maintainability.
 
     PR Title: {pr_title}
 
@@ -110,8 +110,11 @@ async def write_review_comment(repo_name: str, pr_number: int, comment: str):
         "Authorization": f"Bearer {github_pat}",
         "Accept": "application/vnd.github+json"
     }
+
+    print(comment)
+
     url = f"https://api.github.com/repos/{repo_name}/issues/{pr_number}/comments"
-    review_comment = {"body": f"## Reviewes from RISHI 🧠\n\n{comment}"}
+    review_comment = {"body": f"## Review result 🧠\n\n{comment}"}
 
     async with httpx.AsyncClient() as client:
         res = await client.post(url, headers=headers, json=review_comment)
@@ -133,14 +136,16 @@ async def webhook(request: Request):
     if event_type == "pull_request":
         action = payload.get("action")
 
-        if action == "opened":
-            pr = payload["pull_request"]
-            pr_number = pr["number"]
-            pr_title = pr["title"]
-            repo_full_name = payload["repository"]["full_name"]
+        if action not in ["opened", "synchronize"]:
+            return {"status": "ignored", "reason": f"action '{action}' not relevant"}
 
-            diff = await get_pr_diff(repo_full_name, pr_number)
-            review_comment = await review_code_with_llm(diff, pr_title)
-            await write_review_comment(repo_full_name, pr_number, review_comment)
+        pr = payload["pull_request"]
+        pr_number = pr["number"]
+        pr_title = pr["title"]
+        repo_full_name = payload["repository"]["full_name"]
+
+        diff = await get_pr_diff(repo_full_name, pr_number)
+        review_comment = await review_code_with_llm(diff, pr_title)
+        await write_review_comment(repo_full_name, pr_number, review_comment)
 
 app.include_router(router)
