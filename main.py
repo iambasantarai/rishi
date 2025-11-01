@@ -29,6 +29,24 @@ router = APIRouter()
 # Load envornment variables
 load_dotenv()
 
+assert os.environ.get("LLM_PROVIDER") in ["openai", "google"],\
+    "LLM_PROVIDER must be either 'openai' or 'google'"
+
+assert os.environ.get("GITHUB_PAT"),\
+    "Missing environment variable: GITHUB_PAT"
+
+if os.environ["LLM_PROVIDER"] == "openai":
+    assert os.environ.get("OPENAI_API_KEY"),\
+        "Missing environment variable: OPENAI_API_KEY"
+    assert os.environ.get("OPENAI_MODEL"),\
+        "Missing environment variable: OPENAI_MODEL"
+
+if os.environ["LLM_PROVIDER"] == "google":
+    assert os.environ.get("GEMINI_API_KEY"),\
+        "Missing environment variable: GEMINI_API_KEY"
+    assert os.environ.get("GEMINI_MODEL"),\
+        "Missing environment variable: GEMINI_MODEL"
+
 SYSTEM_PROMPT=f"""
 You are rishi - a pull request reviewer.
 You blend serene wisdom with sharp wit, caring deeply about simplicity, readability, maintainability, and architectural coherence.
