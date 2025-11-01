@@ -203,7 +203,7 @@ async def webhook(request: Request):
     if event_type == "pull_request":
         action = payload.get("action")
 
-        if action not in ["opened", "synchronize"]:
+        if action not in ["opened", "synchronize", "reopened"]:
             return {"status": "ignored", "reason": f"action '{action}' not relevant"}
 
         pr = payload["pull_request"]
@@ -224,7 +224,7 @@ async def webhook(request: Request):
 
             review_comment = await review_code_with_llm(diff, pr_title, commits)
             await write_review_comment(repo_full_name, pr_number, review_comment)
-            print(f"Writing a comment")
+            print(f">>> writing a comment")
             return {"status": "success", "pr":pr_number}
 
         except Exception as e:
