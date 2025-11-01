@@ -191,7 +191,7 @@ async def webhook(request: Request):
 
             if len(diff) > 5000:
                 comment = "This PR is too large for automated review. Please break it into smaller PRs."
-                await post_review_comment(repo_full_name, pr_number, comment)
+                await write_review_comment(repo_full_name, pr_number, comment)
                 return {"status": "skipped", "reason": "diff too large"}
 
             review_comment = await review_code_with_llm(diff, pr_title)
