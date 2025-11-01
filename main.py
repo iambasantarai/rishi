@@ -199,7 +199,7 @@ async def webhook(request: Request):
             return {"status": "success", "pr":pr_number}
 
         except Exception as e:
-            printf(f"Error processing PR: {e}")
+            print(f"Error processing PR: {e}")
             raise HttpException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
     return {"status": "ignored", "reason":"not a PR event"}
