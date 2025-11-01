@@ -42,7 +42,7 @@ def openai_client(input: str):
     )
 
     res = client.responses.create(
-        model="gpt-4o",
+        model=os.environ.get("OPENAI_MODEL"),
         instructions=SYSTEM_PROMPT,
         input=input,
     )
@@ -55,7 +55,7 @@ def google_genai_client(input: str):
     )
 
     res = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=os.environ.get("GEMINI_MODEL"),
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT
         ),
