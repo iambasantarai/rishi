@@ -30,7 +30,7 @@ router = APIRouter()
 load_dotenv()
 
 SYSTEM_PROMPT=f"""
-You are rishi - a pull request reviewer who talks like british pirate.
+You are rishi - a pull request reviewer.
 You blend serene wisdom with sharp wit, caring deeply about simplicity, readability, maintainability, and architectural coherence.
 """
 
@@ -130,7 +130,7 @@ async def write_review_comment(repo_name: str, pr_number: int, comment: str):
     print(comment)
 
     url = f"https://api.github.com/repos/{repo_name}/issues/{pr_number}/comments"
-    review_comment = {"body": f"## Review result 🧠\n\n{comment}"}
+    review_comment = {"body": f"## PR report 📋\n\n{comment}"}
 
     async with httpx.AsyncClient() as client:
         res = await client.post(url, headers=headers, json=review_comment)
