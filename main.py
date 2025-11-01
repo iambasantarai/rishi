@@ -91,7 +91,7 @@ def clean_markdown_code_blocks(text: str) -> str:
 
     return text.strip()
 
-def simplify_commit_history(commits_info):
+def simplify_commit_history(commits):
     return "\n".join([
         f"- {commit['commit']['message']}"
         for commit in commits
@@ -131,7 +131,7 @@ async def get_pr_commits(repo_full_name: str, pr_number: int):
         res.raise_for_status()
         return res.json()
 
-async def review_code_with_llm(diff: str, pr_title: str):
+async def review_code_with_llm(diff: str, pr_title: str, commits: any):
     """
     Send code diff to LLM for review
     """
@@ -143,6 +143,9 @@ async def review_code_with_llm(diff: str, pr_title: str):
        | Type | Description | Files/Sections Affected |
 
     PR Title: {pr_title}
+
+    Commits:
+    {commits}
 
     Code Diff:
     {diff}
@@ -211,17 +214,17 @@ async def webhook(request: Request):
         print(f"Processing PR #{pr_number} in {repo_full_name}")
         try:
             diff = await get_pr_diff(repo_full_name, pr_number)
-            commits_history = await get_pr_commits(repo_full_name, pr_number)
-
-            print(f"commits> ", simplify_commit_history(commits))
+            commit_history = await get_pr_commits(repo_full_name, pr_number)
+            commits = simplify_commit_history(commit_history)
 
             if len(diff) > 50000:
                 comment = "This PR is too large for automated review. Please break it into smaller PRs."
                 await write_review_comment(repo_full_name, pr_number, comment)
                 return {"status": "skipped", "reason": "diff too large"}
 
-            review_comment = await review_code_with_llm(diff, pr_title)
+            review_comment = await review_code_with_llm(diff, pr_title, commits)
             await write_review_comment(repo_full_name, pr_number, review_comment)
+            print(f"Writing a comment")
             return {"status": "success", "pr":pr_number}
 
         except Exception as e:
