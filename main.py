@@ -91,6 +91,12 @@ def clean_markdown_code_blocks(text: str) -> str:
 
     return text.strip()
 
+def simplify_commit_history(commits_info):
+    return "\n".join([
+        f"- {commit['commit']['message']}"
+        for commit in commits
+    ])
+
 async def get_pr_diff(repo_name: str, pr_number: int)-> str:
     """
     Fetch the diff for a pull request
@@ -205,9 +211,9 @@ async def webhook(request: Request):
         print(f"Processing PR #{pr_number} in {repo_full_name}")
         try:
             diff = await get_pr_diff(repo_full_name, pr_number)
-            commits = await get_pr_commits(repo_full_name, pr_number)
+            commits_history = await get_pr_commits(repo_full_name, pr_number)
 
-            print(f"commits> ", commits)
+            print(f"commits> ", simplify_commit_history(commits))
 
             if len(diff) > 50000:
                 comment = "This PR is too large for automated review. Please break it into smaller PRs."
