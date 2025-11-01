@@ -2,7 +2,7 @@ import os
 import time
 import pprint
 import httpx
-from fastapi import FastAPI, APIRouter, status, Request
+from fastapi import FastAPI, APIRouter, status, Request, HTTPException
 from openai import OpenAI
 from dotenv import load_dotenv
 from google import genai
