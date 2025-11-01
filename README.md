@@ -4,11 +4,11 @@
 ### Overview
 
 While exploring open-source projects, i often noticed that pull requests were being reviewed by CodeRabbit, leaving well-crafted and insightful comments.
-That instantly sparked my curiosity - how does it actually work?
+That instantly sparked my curiosity, how does it actually work?
 
 I started reverse-engineering the idea and had a few back-and-forth conversations with Claude, which helped me piece together its underlying workflow and structure.
 
-Fueled by curiosity, I decided to build my own experimental version - and that's how this project came to life.
+Fueled by curiosity, I decided to build my own experimental version and that's how this project came to life.
 
 Here's how it works:
 - Receives a webhook from GitHub when a pull request is opened, reopened or updated
@@ -61,3 +61,11 @@ Here's how it works:
     - Select: "Let me select individual events" → Check only "Pull requests"
 
 > I've only tested it with gemini, hopefully openai works as well.
+
+### Test It!
+
+- Create a test branch in your repo
+- Make some changes (add a file, modify code)
+- Open a pull request
+- Watch your terminal - you'll see the webhook hit
+- Check the PR - you'll see the review comment!
