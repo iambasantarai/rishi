@@ -37,6 +37,10 @@ You blend serene wisdom with sharp wit, caring deeply about simplicity, readabil
 pp = pprint.PrettyPrinter(indent=2)
 
 def openai_client(input: str):
+    """
+    Create an OpenAI client
+    """
+
     client = OpenAI(
         api_key=os.environ.get("OPENAI_API_KEY"),
     )
@@ -50,6 +54,10 @@ def openai_client(input: str):
     return res.output_text
 
 def google_genai_client(input: str):
+    """
+    Create an Google Gemini client
+    """
+
     client = genai.Client(
         api_key=os.environ.get("GEMINI_API_KEY")
     )
@@ -65,7 +73,10 @@ def google_genai_client(input: str):
     return res.text
 
 def clean_markdown_code_blocks(text: str) -> str:
-    """Remove markdown code block markers from start and end of text"""
+    """
+    Remove markdown code block markers from start and end of text
+    """
+
     text = text.strip()
 
     if text.startswith("```"):
@@ -81,6 +92,10 @@ def clean_markdown_code_blocks(text: str) -> str:
     return text.strip()
 
 async def get_pr_diff(repo_name: str, pr_number: int)-> str:
+    """
+    Fetch the diff for a pull request
+    """
+
     github_pat = os.environ.get("GITHUB_PAT")
     headers = {
         "Authorization": f"Bearer {github_pat}",
@@ -94,6 +109,10 @@ async def get_pr_diff(repo_name: str, pr_number: int)-> str:
         return res.text
 
 async def review_code_with_llm(diff: str, pr_title: str):
+    """
+    Send code diff to LLM for review
+    """
+
     prompt = f"""
     Review the following pull request and provide:
     1. A **concise summary** of what this PR does - infer the main changes from the diff and categorize them into features, fixes, fefactors, or other changes.
@@ -120,6 +139,10 @@ async def review_code_with_llm(diff: str, pr_title: str):
     return clean_markdown_code_blocks(res)
 
 async def write_review_comment(repo_name: str, pr_number: int, comment: str):
+    """
+    Post a review comment on the PR
+    """
+
     github_pat = os.environ.get("GITHUB_PAT")
     headers = {
         "Authorization": f"Bearer {github_pat}",
@@ -143,6 +166,9 @@ def heartbeat():
 
 @router.post("/webhook", status_code=status.HTTP_200_OK, tags=["webhook"])
 async def webhook(request: Request):
+    """
+    Handle github webhook events
+    """
     payload = await request.json()
     event_type = request.headers.get("X-GitHub-Event")
 
