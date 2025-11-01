@@ -108,6 +108,23 @@ async def get_pr_diff(repo_name: str, pr_number: int)-> str:
         res.raise_for_status()
         return res.text
 
+async def get_pr_commits(repo_full_name: str, pr_number: int):
+    """
+    Fetch commits for a pull request
+    """
+
+    github_pat = os.environ.get("GITHUB_PAT")
+    url = f"https://api.github.com/repos/{repo_full_name}/pulls/{pr_number}/commits"
+    headers = {
+        "Authorization": f"token {github_pat}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        res = await client.get(url, headers=headers)
+        res.raise_for_status()
+        return res.json()
+
 async def review_code_with_llm(diff: str, pr_title: str):
     """
     Send code diff to LLM for review
@@ -188,6 +205,9 @@ async def webhook(request: Request):
         print(f"Processing PR #{pr_number} in {repo_full_name}")
         try:
             diff = await get_pr_diff(repo_full_name, pr_number)
+            commits = await get_pr_commits(repo_full_name, pr_number)
+
+            print(f"commits> ", commits)
 
             if len(diff) > 50000:
                 comment = "This PR is too large for automated review. Please break it into smaller PRs."
