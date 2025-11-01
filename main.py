@@ -99,7 +99,6 @@ async def review_code_with_llm(diff: str, pr_title: str):
     1. A **concise summary** of what this PR does - infer the main changes from the diff and categorize them into features, fixes, fefactors, or other changes.
     2. Present this summary in a **Markdown table** with the following columns:  
        | Type | Description | Files/Sections Affected |
-    3. After the table, include **one short paragraph** of practical feedback on code quality, architecture, or maintainability.
 
     PR Title: {pr_title}
 
@@ -126,8 +125,6 @@ async def write_review_comment(repo_name: str, pr_number: int, comment: str):
         "Authorization": f"Bearer {github_pat}",
         "Accept": "application/vnd.github+json"
     }
-
-    print(comment)
 
     url = f"https://api.github.com/repos/{repo_name}/issues/{pr_number}/comments"
     review_comment = {"body": f"## PR report 📋\n\n{comment}"}
