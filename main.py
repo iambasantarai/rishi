@@ -161,6 +161,7 @@ def heartbeat():
     """
     Returns a server heartbeat timestamp in nanoseconds.
     """
+
     heartbeat = time.monotonic_ns()
     return {"heartbeat": heartbeat}
 
@@ -169,6 +170,7 @@ async def webhook(request: Request):
     """
     Handle github webhook events
     """
+
     payload = await request.json()
     event_type = request.headers.get("X-GitHub-Event")
 
@@ -183,8 +185,18 @@ async def webhook(request: Request):
         pr_title = pr["title"]
         repo_full_name = payload["repository"]["full_name"]
 
-        diff = await get_pr_diff(repo_full_name, pr_number)
-        review_comment = await review_code_with_llm(diff, pr_title)
-        await write_review_comment(repo_full_name, pr_number, review_comment)
+        print(f"Processing PR #{pr_number} in {repo_full_name}")
+        try:
+            diff = await get_pr_diff(repo_full_name, pr_number)
+            review_comment = await review_code_with_llm(diff, pr_title)
+            await write_review_comment(repo_full_name, pr_number, review_comment)
+            return {"status": "success", "pr":pr_number}
+
+        except Exception as e:
+            printf(f"Error processing PR: {e}")
+            raise HttpException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+    return {"status": "ignored", "reason":"not a PR event"}
+
 
 app.include_router(router)
