@@ -64,6 +64,22 @@ def google_genai_client(input: str):
 
     return res.text
 
+def clean_markdown_code_blocks(text: str) -> str:
+    """Remove markdown code block markers from start and end of text"""
+    text = text.strip()
+
+    if text.startswith("```"):
+        first_newline = text.find("\n")
+        if first_newline != -1:
+            text = text[first_newline + 1:]
+        else:
+            text = text[3:]
+
+    if text.endswith("```"):
+        text = text[:-3]
+
+    return text.strip()
+
 async def get_pr_diff(repo_name: str, pr_number: int)-> str:
     github_pat = os.environ.get("GITHUB_PAT")
     headers = {
@@ -102,7 +118,7 @@ async def review_code_with_llm(diff: str, pr_title: str):
         case _:
             print("Invalid llm provider.")
             return
-    return res
+    return clean_markdown_code_blocks(res)
 
 async def write_review_comment(repo_name: str, pr_number: int, comment: str):
     github_pat = os.environ.get("GITHUB_PAT")
